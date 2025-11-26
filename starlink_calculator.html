@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starlink Link Budget Calculator | Interactive Analysis</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --accent-blue: #00d4ff;
+            --accent-purple: #a855f7;
+            --accent-green: #10b981;
+            --accent-orange: #f97316;
+            --accent-red: #ef4444;
+            --accent-yellow: #eab308;
+            --text-primary: #f0f0f5;
+            --text-secondary: #8888a0;
+            --border-color: #2a2a3a;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-top: 0.25rem;
+        }
+        
+        /* Search Section */
+        .search-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .search-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .search-input-group {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .search-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+        
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .altitude-input-group {
+            width: 180px;
+        }
+        
+        .altitude-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--accent-blue);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .altitude-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+        
+        .search-btn {
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            align-self: flex-end;
+            white-space: nowrap;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+        
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .search-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+        }
+        
+        .search-hint span {
+            color: var(--accent-blue);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .search-hint span:hover {
+            color: var(--accent-purple);
+        }
+        
+        /* Status Message */
+        .status-message {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            display: none;
+        }
+        
+        .status-message.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--accent-red);
+        }
+        
+        .status-message.loading {
+            display: block;
+            background: rgba(0, 212, 255, 0.15);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--accent-blue);
+        }
+        
+        .status-message.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--accent-green);
+        }
+        
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (max-width: 1000px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        
+        .card-icon.blue { background: rgba(0, 212, 255, 0.15); }
+        .card-icon.purple { background: rgba(168, 85, 247, 0.15); }
+        .card-icon.green { background: rgba(16, 185, 129, 0.15); }
+        .card-icon.orange { background: rgba(249, 115, 22, 0.15); }
+        
+        .card-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .card-body {
+            padding: 1.25rem;
+        }
+        
+        /* Map */
+        #map {
+            height: 300px;
+            background: var(--bg-secondary);
+        }
+        
+        .leaflet-container {
+            background: var(--bg-secondary);
+        }
+        
+        /* Location Display */
+        .location-display {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+        
+        .location-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .location-details {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .location-detail {
+            font-size: 0.85rem;
+        }
+        
+        .location-detail-label {
+            color: var(--text-secondary);
+        }
+        
+        .location-detail-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+        
+        /* Key Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        
+        .metric-card {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+        
+        .metric-value.blue { color: var(--accent-blue); }
+        .metric-value.green { color: var(--accent-green); }
+        .metric-value.orange { color: var(--accent-orange); }
+        .metric-value.purple { color: var(--accent-purple); }
+        
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Comparison Bars */
+        .comparison-item {
+            margin-bottom: 1.25rem;
+        }
+        
+        .comparison-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .comparison-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .advantage-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 50px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .advantage-badge.positive {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+        }
+        
+        .advantage-badge.neutral {
+            background: rgba(136, 136, 160, 0.15);
+            color: var(--text-secondary);
+        }
+        
+        .advantage-badge.negative {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+        }
+        
+        .bar-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.35rem;
+        }
+        
+        .bar-label {
+            width: 80px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .bar-track {
+            flex: 1;
+            height: 24px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 600;
+            transition: width 0.8s ease-out;
+        }
+        
+        .bar-fill.sea-level {
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-red));
+        }
+        
+        .bar-fill.altitude {
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+        }
+        
+        /* Scenarios */
+        .scenarios {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+        
+        @media (max-width: 900px) {
+            .scenarios {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .scenario {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        
+        .scenario:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-blue);
+        }
+        
+        .scenario-icon {
+            font-size: 1.75rem;
+            margin-bottom: 0.35rem;
+        }
+        
+        .scenario-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .scenario-advantage {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        
+        .scenario-advantage.low { color: var(--text-secondary); }
+        .scenario-advantage.medium { color: var(--accent-blue); }
+        .scenario-advantage.high { color: var(--accent-green); }
+        .scenario-advantage.extreme { color: var(--accent-purple); }
+        
+        .scenario-desc {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+        
+        /* Full Width */
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        /* Layman Summary */
+        .layman-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        
+        @media (max-width: 900px) {
+            .layman-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 500px) {
+            .layman-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .layman-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .layman-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .layman-content {
+            flex: 1;
+        }
+        
+        .layman-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.35rem;
+            color: var(--text-primary);
+        }
+        
+        .layman-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        
+        .layman-desc.good {
+            color: var(--accent-green);
+        }
+        
+        .layman-desc.great {
+            color: var(--accent-blue);
+        }
+        
+        .layman-desc.amazing {
+            color: var(--accent-purple);
+        }
+
+        /* Physics Explanation */
+        .physics-note {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+        
+        .physics-note strong {
+            color: var(--text-primary);
+        }
+        
+        .physics-note code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-card);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: var(--accent-blue);
+            font-size: 0.8rem;
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        
+        /* Leaflet Popup */
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-radius: 12px;
+        }
+        
+        .leaflet-popup-tip {
+            background: var(--bg-card);
+        }
+        
+        .popup-content {
+            font-family: 'Outfit', sans-serif;
+            padding: 0.25rem;
+        }
+        
+        .popup-content h3 {
+            font-size: 0.95rem;
+            margin-bottom: 0.35rem;
+        }
+        
+        .popup-content p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 0.2rem 0;
+        }
+        
+        .popup-content .altitude {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+        
+        /* Custom Marker */
+        .custom-marker {
+            background: var(--accent-blue);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--accent-blue);
+        }
+        
+        .sea-level-marker {
+            background: var(--accent-orange);
+            border: 2px solid white;
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🛰️</div>
+                <h1>Starlink Link Budget Calculator</h1>
+            </div>
+            <p class="subtitle">See how altitude affects your satellite signal strength</p>
+        </header>
+        
+        <!-- Search Section -->
+        <div class="search-section">
+            <div class="search-row">
+                <div class="search-input-group">
+                    <label class="search-label">Search Location</label>
+                    <input type="text" id="location-search" class="search-input" placeholder="Enter city, mountain, or address..." />
+                </div>
+                <div class="altitude-input-group">
+                    <label class="search-label">Altitude (meters)</label>
+                    <input type="number" id="altitude-input" class="altitude-input" value="0" min="0" max="9000" />
+                </div>
+                <button id="search-btn" class="search-btn">Calculate</button>
+            </div>
+            <p class="search-hint">
+                Try: <span onclick="quickSearch('Mount Everest Base Camp')">Everest Base Camp</span> • 
+                <span onclick="quickSearch('Denver, Colorado')">Denver, CO</span> • 
+                <span onclick="quickSearch('La Paz, Bolivia')">La Paz, Bolivia</span> • 
+                <span onclick="quickSearch('Mendoza, Argentina')">Mendoza</span> •
+                <span onclick="quickSearch('Machu Picchu, Peru')">Machu Picchu</span>
+            </p>
+            <div id="status-message" class="status-message"></div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <!-- Map Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon blue">🗺️</div>
+                    <span class="card-title">Location</span>
+                </div>
+                <div id="map"></div>
+                <div class="card-body">
+                    <div id="location-display" class="location-display">
+                        <div class="location-name" id="display-name">Search for a location...</div>
+                        <div class="location-details">
+                            <div class="location-detail">
+                                <span class="location-detail-label">Lat: </span>
+                                <span class="location-detail-value" id="display-lat">—</span>
+                            </div>
+                            <div class="location-detail">
+                                <span class="location-detail-label">Lon: </span>
+                                <span class="location-detail-value" id="display-lon">—</span>
+                            </div>
+                            <div class="location-detail">
+                                <span class="location-detail-label">Altitude: </span>
+                                <span class="location-detail-value" id="display-alt">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Key Metrics -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon green">📊</div>
+                    <span class="card-title">Your Altitude Advantage</span>
+                </div>
+                <div class="card-body">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value blue" id="metric-altitude">0m</div>
+                            <div class="metric-label">Your Altitude</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value green" id="metric-wv-reduction">0%</div>
+                            <div class="metric-label">Less Water Vapor</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value orange" id="metric-typical-advantage">+0 dB</div>
+                            <div class="metric-label">Typical Day Advantage</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value purple" id="metric-storm-advantage">+0 dB</div>
+                            <div class="metric-label">Storm Advantage</div>
+                        </div>
+                    </div>
+                    
+                    <div class="physics-note">
+                        <strong>How it works:</strong> Water vapor absorbs Ku-band (12 GHz) signals. 
+                        Its density decreases exponentially with altitude (scale height ≈ 2 km). 
+                        At altitude <code id="physics-alt">0m</code>, you're above <code id="physics-wv">0%</code> 
+                        of atmospheric water vapor, plus any clouds and rain that typically occur below your elevation.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Path Loss Comparison -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon orange">📡</div>
+                    <span class="card-title">Total Path Loss Comparison</span>
+                </div>
+                <div class="card-body">
+                    <div class="comparison-item">
+                        <div class="comparison-header">
+                            <span class="comparison-label">☀️ Clear Sky</span>
+                            <span class="advantage-badge neutral" id="badge-clear">+0 dB</span>
+                        </div>
+                        <div class="bar-row">
+                            <span class="bar-label">Sea Level</span>
+                            <div class="bar-track">
+                                <div class="bar-fill sea-level" id="bar-clear-sea" style="width: 90%;">176.5 dB</div>
+                            </div>
+                        </div>
+                        <div class="bar-row">
+                            <span class="bar-label">Your Alt.</span>
+                            <div class="bar-track">
+                                <div class="bar-fill altitude" id="bar-clear-alt" style="width: 90%;">176.5 dB</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-item">
+                        <div class="comparison-header">
+                            <span class="comparison-label">⛅ Partly Cloudy</span>
+                            <span class="advantage-badge positive" id="badge-cloudy">+0 dB</span>
+                        </div>
+                        <div class="bar-row">
+                            <span class="bar-label">Sea Level</span>
+                            <div class="bar-track">
+                                <div class="bar-fill sea-level" id="bar-cloudy-sea" style="width: 92%;">177.8 dB</div>
+                            </div>
+                        </div>
+                        <div class="bar-row">
+                            <span class="bar-label">Your Alt.</span>
+                            <div class="bar-track">
+                                <div class="bar-fill altitude" id="bar-cloudy-alt" style="width: 90%;">176.5 dB</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="comparison-item">
+                        <div class="comparison-header">
+                            <span class="comparison-label">🌧️ Rainy / Overcast</span>
+                            <span class="advantage-badge positive" id="badge-rainy">+0 dB</span>
+                        </div>
+                        <div class="bar-row">
+                            <span class="bar-label">Sea Level</span>
+                            <div class="bar-track">
+                                <div class="bar-fill sea-level" id="bar-rainy-sea" style="width: 96%;">182.4 dB</div>
+                            </div>
+                        </div>
+                        <div class="bar-row">
+                            <span class="bar-label">Your Alt.</span>
+                            <div class="bar-track">
+                                <div class="bar-fill altitude" id="bar-rainy-alt" style="width: 90%;">176.5 dB</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Parameters -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon purple">⚙️</div>
+                    <span class="card-title">Starlink System Parameters</span>
+                </div>
+                <div class="card-body">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value blue" style="font-size: 1.25rem;">Ku-band</div>
+                            <div class="metric-label">Frequency Band</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value blue" style="font-size: 1.25rem;">12 GHz</div>
+                            <div class="metric-label">Center Frequency</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value blue" style="font-size: 1.25rem;">550 km</div>
+                            <div class="metric-label">Orbital Altitude</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value blue" style="font-size: 1.25rem;">~172 dB</div>
+                            <div class="metric-label">Free Space Loss</div>
+                        </div>
+                    </div>
+                    
+                    <div class="physics-note" style="margin-top: 1rem;">
+                        <strong>Why Ku-band?</strong> Starlink uses 10.7-12.7 GHz for user terminals. 
+                        It's a balance: higher frequency = more bandwidth but more rain fade. 
+                        Ku-band handles weather better than Ka-band (26-40 GHz) while still delivering broadband speeds.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Layman Summary -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <div class="card-icon green">💡</div>
+                    <span class="card-title">What This Actually Means For Your Internet</span>
+                </div>
+                <div class="card-body">
+                    <div class="layman-grid">
+                        <div class="layman-item">
+                            <div class="layman-icon">📶</div>
+                            <div class="layman-content">
+                                <div class="layman-title">Signal Strength</div>
+                                <div class="layman-desc" id="layman-signal">At sea level, your signal is normal.</div>
+                            </div>
+                        </div>
+                        <div class="layman-item">
+                            <div class="layman-icon">🎬</div>
+                            <div class="layman-content">
+                                <div class="layman-title">Streaming Quality</div>
+                                <div class="layman-desc" id="layman-streaming">No change expected vs. sea level.</div>
+                            </div>
+                        </div>
+                        <div class="layman-item">
+                            <div class="layman-icon">🌧️</div>
+                            <div class="layman-content">
+                                <div class="layman-title">Bad Weather Performance</div>
+                                <div class="layman-desc" id="layman-weather">Same rain fade as everyone else.</div>
+                            </div>
+                        </div>
+                        <div class="layman-item">
+                            <div class="layman-icon">🎯</div>
+                            <div class="layman-content">
+                                <div class="layman-title">Bottom Line</div>
+                                <div class="layman-desc" id="layman-bottomline">No altitude advantage at this elevation.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Weather Scenarios -->
+            <div class="card full-width">
+                <div class="card-header">
+                    <div class="card-icon blue">⚡</div>
+                    <span class="card-title">Your Advantage by Weather Condition</span>
+                </div>
+                <div class="card-body">
+                    <div class="scenarios">
+                        <div class="scenario">
+                            <div class="scenario-icon">☀️</div>
+                            <div class="scenario-name">Clear Sky</div>
+                            <div class="scenario-advantage low" id="scenario-clear">+0 dB</div>
+                            <div class="scenario-desc">Minimal difference</div>
+                        </div>
+                        <div class="scenario">
+                            <div class="scenario-icon">⛅</div>
+                            <div class="scenario-name">Partly Cloudy</div>
+                            <div class="scenario-advantage medium" id="scenario-cloudy">+0 dB</div>
+                            <div class="scenario-desc" id="scenario-cloudy-desc">—</div>
+                        </div>
+                        <div class="scenario">
+                            <div class="scenario-icon">🌧️</div>
+                            <div class="scenario-name">Light Rain</div>
+                            <div class="scenario-advantage high" id="scenario-rain">+0 dB</div>
+                            <div class="scenario-desc" id="scenario-rain-desc">—</div>
+                        </div>
+                        <div class="scenario">
+                            <div class="scenario-icon">⛈️</div>
+                            <div class="scenario-name">Heavy Storm</div>
+                            <div class="scenario-advantage extreme" id="scenario-storm">+0 dB</div>
+                            <div class="scenario-desc" id="scenario-storm-desc">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Built for <strong>SPCE 5400</strong> — Small Satellite Engineering & Operations</p>
+            <p style="margin-top: 0.35rem;">Jordan Clayton • November 2025</p>
+        </footer>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Wait for everything to load
+        window.addEventListener('load', function() {
+            // Initialize map
+            const map = L.map('map', {
+                zoomControl: true,
+                scrollWheelZoom: false
+            }).setView([20, 0], 2);
+            
+            // Dark map tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OSM © CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Marker
+            let currentMarker = null;
+            
+            // Custom marker icon
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+                popupAnchor: [0, -12]
+            });
+            
+            // DOM Elements
+            const searchInput = document.getElementById('location-search');
+            const altitudeInput = document.getElementById('altitude-input');
+            const searchBtn = document.getElementById('search-btn');
+            const statusMessage = document.getElementById('status-message');
+            
+            // Event Listeners
+            searchBtn.addEventListener('click', performSearch);
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+            altitudeInput.addEventListener('change', function() {
+                updateCalculations(parseFloat(altitudeInput.value) || 0);
+            });
+            
+            // Make quickSearch available globally
+            window.quickSearch = function(query) {
+                searchInput.value = query;
+                performSearch();
+            };
+            
+            // Main search function
+            async function performSearch() {
+                const query = searchInput.value.trim();
+                if (!query) {
+                    showStatus('Please enter a location', 'error');
+                    return;
+                }
+                
+                showStatus('Searching...', 'loading');
+                searchBtn.disabled = true;
+                
+                try {
+                    // Geocode using Nominatim
+                    const geoResponse = await fetch(
+                        'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=1'
+                    );
+                    const geoData = await geoResponse.json();
+                    
+                    if (!geoData || geoData.length === 0) {
+                        showStatus('Location not found. Try a different search.', 'error');
+                        searchBtn.disabled = false;
+                        return;
+                    }
+                    
+                    const location = geoData[0];
+                    const lat = parseFloat(location.lat);
+                    const lon = parseFloat(location.lon);
+                    
+                    // Get elevation
+                    showStatus('Getting elevation data...', 'loading');
+                    let elevation = 0;
+                    
+                    try {
+                        const elevResponse = await fetch(
+                            'https://api.open-elevation.com/api/v1/lookup?locations=' + lat + ',' + lon
+                        );
+                        const elevData = await elevResponse.json();
+                        if (elevData.results && elevData.results[0]) {
+                            elevation = elevData.results[0].elevation;
+                        }
+                    } catch (elevError) {
+                        console.warn('Elevation API failed, using 0:', elevError);
+                        showStatus('Found location (elevation unavailable - enter manually)', 'success');
+                    }
+                    
+                    // Update UI
+                    updateLocation(location.display_name, lat, lon, elevation);
+                    showStatus('Found: ' + location.display_name.split(',').slice(0,2).join(','), 'success');
+                    
+                    // Clear status after 3 seconds
+                    setTimeout(function() {
+                        statusMessage.className = 'status-message';
+                    }, 3000);
+                    
+                } catch (error) {
+                    console.error('Search error:', error);
+                    showStatus('Search failed. Please try again.', 'error');
+                }
+                
+                searchBtn.disabled = false;
+            }
+            
+            // Update location on map and UI
+            function updateLocation(name, lat, lon, elevation) {
+                // Update map
+                map.setView([lat, lon], 8);
+                
+                if (currentMarker) {
+                    map.removeLayer(currentMarker);
+                }
+                
+                currentMarker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
+                currentMarker.bindPopup(
+                    '<div class="popup-content">' +
+                    '<h3>📍 ' + name.split(',')[0] + '</h3>' +
+                    '<p>Altitude: <span class="altitude">' + elevation.toFixed(0) + 'm (' + (elevation * 3.281).toFixed(0) + ' ft)</span></p>' +
+                    '</div>'
+                ).openPopup();
+                
+                // Update display
+                document.getElementById('display-name').textContent = name.split(',').slice(0, 2).join(',');
+                document.getElementById('display-lat').textContent = lat.toFixed(4) + '°';
+                document.getElementById('display-lon').textContent = lon.toFixed(4) + '°';
+                document.getElementById('display-alt').textContent = elevation.toFixed(0) + 'm (' + (elevation * 3.281).toFixed(0) + ' ft)';
+                
+                // Update altitude input
+                altitudeInput.value = elevation.toFixed(0);
+                
+                // Update calculations
+                updateCalculations(elevation);
+            }
+            
+            // Link budget calculations
+            function updateCalculations(altitude) {
+                // Water vapor reduction (scale height ~2km)
+                const wvReduction = (1 - Math.exp(-altitude / 2000)) * 100;
+                
+                // Cloud coverage probability reduction (rough model: clouds mainly below 3000m)
+                const cloudReduction = Math.min(altitude / 3000, 1) * 100;
+                
+                // Base atmospheric losses at sea level (dB)
+                const seaLevelLosses = {
+                    clear: { wv: 0.2, cloud: 0, rain: 0 },
+                    cloudy: { wv: 0.35, cloud: 1.0, rain: 0 },
+                    rainy: { wv: 0.5, cloud: 2.0, rain: 3.5 },
+                    storm: { wv: 0.6, cloud: 3.0, rain: 12.0 }
+                };
+                
+                // Free space path loss (constant)
+                const fspl = 176.3;
+                
+                // Calculate losses at altitude
+                const wvFactor = Math.exp(-altitude / 2000);
+                const cloudFactor = altitude > 3000 ? 0 : (1 - altitude / 3000);
+                const rainFactor = altitude > 2500 ? 0 : (1 - altitude / 2500);
+                
+                const results = {};
+                
+                for (const condition in seaLevelLosses) {
+                    const losses = seaLevelLosses[condition];
+                    const seaTotal = fspl + losses.wv + losses.cloud + losses.rain;
+                    const altTotal = fspl + 
+                        (losses.wv * wvFactor) + 
+                        (losses.cloud * cloudFactor) + 
+                        (losses.rain * rainFactor);
+                    const advantage = seaTotal - altTotal;
+                    
+                    results[condition] = {
+                        seaLevel: seaTotal,
+                        altitude: altTotal,
+                        advantage: advantage
+                    };
+                }
+                
+                // Update UI - Metrics
+                document.getElementById('metric-altitude').textContent = altitude.toFixed(0) + 'm';
+                document.getElementById('metric-wv-reduction').textContent = wvReduction.toFixed(0) + '%';
+                document.getElementById('metric-typical-advantage').textContent = '+' + results.cloudy.advantage.toFixed(1) + ' dB';
+                document.getElementById('metric-storm-advantage').textContent = '+' + results.storm.advantage.toFixed(1) + ' dB';
+                
+                // Physics note
+                document.getElementById('physics-alt').textContent = altitude.toFixed(0) + 'm';
+                document.getElementById('physics-wv').textContent = wvReduction.toFixed(0) + '%';
+                
+                // Update bars and badges
+                updateBar('clear', results.clear);
+                updateBar('cloudy', results.cloudy);
+                updateBar('rainy', results.rainy);
+                
+                // Update scenarios
+                updateScenario('clear', results.clear.advantage, 'low');
+                updateScenario('cloudy', results.cloudy.advantage, results.cloudy.advantage > 1 ? 'medium' : 'low');
+                updateScenario('rain', results.rainy.advantage, results.rainy.advantage > 3 ? 'high' : 'medium');
+                updateScenario('storm', results.storm.advantage, results.storm.advantage > 8 ? 'extreme' : 'high');
+                
+                // Update scenario descriptions
+                function powerMultiplier(adv) {
+                    return Math.pow(10, adv / 10).toFixed(1);
+                }
+                document.getElementById('scenario-cloudy-desc').textContent = 
+                    results.cloudy.advantage > 0.5 ? powerMultiplier(results.cloudy.advantage) + '× power' : 'Minimal';
+                document.getElementById('scenario-rain-desc').textContent = 
+                    powerMultiplier(results.rainy.advantage) + '× power';
+                document.getElementById('scenario-storm-desc').textContent = 
+                    powerMultiplier(results.storm.advantage) + '× power';
+                
+                // Update layman descriptions
+                updateLaymanSummary(altitude, results, wvReduction);
+            }
+            
+            function updateLaymanSummary(altitude, results, wvReduction) {
+                var signalEl = document.getElementById('layman-signal');
+                var streamingEl = document.getElementById('layman-streaming');
+                var weatherEl = document.getElementById('layman-weather');
+                var bottomlineEl = document.getElementById('layman-bottomline');
+                
+                // Reset classes
+                signalEl.className = 'layman-desc';
+                streamingEl.className = 'layman-desc';
+                weatherEl.className = 'layman-desc';
+                bottomlineEl.className = 'layman-desc';
+                
+                var typicalAdv = results.cloudy.advantage;
+                var stormAdv = results.storm.advantage;
+                
+                if (altitude < 500) {
+                    signalEl.textContent = "At this elevation, your signal is the same as most users.";
+                    streamingEl.textContent = "No difference in streaming quality vs. typical locations.";
+                    weatherEl.textContent = "You'll experience normal rain fade like everyone else.";
+                    bottomlineEl.textContent = "No significant altitude advantage at this elevation.";
+                } else if (altitude < 1500) {
+                    signalEl.textContent = "Slightly less atmosphere to punch through — minor improvement.";
+                    signalEl.className = 'layman-desc good';
+                    streamingEl.textContent = "Might hold 4K slightly better during light rain.";
+                    weatherEl.textContent = "Noticeably less disruption during cloudy/drizzly days.";
+                    weatherEl.className = 'layman-desc good';
+                    bottomlineEl.textContent = "Small but real advantage, especially in bad weather.";
+                    bottomlineEl.className = 'layman-desc good';
+                } else if (altitude < 3000) {
+                    signalEl.textContent = "You're above " + wvReduction.toFixed(0) + "% of water vapor — cleaner signal path!";
+                    signalEl.className = 'layman-desc good';
+                    streamingEl.textContent = "More reliable 4K streaming, fewer buffering drops.";
+                    streamingEl.className = 'layman-desc good';
+                    weatherEl.textContent = "When it's raining below you, your connection stays solid.";
+                    weatherEl.className = 'layman-desc great';
+                    bottomlineEl.textContent = "Real advantage! Your Starlink will outperform sea-level users on bad days.";
+                    bottomlineEl.className = 'layman-desc great';
+                } else if (altitude < 5000) {
+                    signalEl.textContent = "Above most clouds and " + wvReduction.toFixed(0) + "% of water vapor — excellent signal!";
+                    signalEl.className = 'layman-desc great';
+                    streamingEl.textContent = "Rock-solid streaming even when valleys below are stormy.";
+                    streamingEl.className = 'layman-desc great';
+                    weatherEl.textContent = "Rain and clouds happen below you — almost no weather impact!";
+                    weatherEl.className = 'layman-desc amazing';
+                    bottomlineEl.textContent = "Major advantage! " + Math.pow(10, stormAdv/10).toFixed(0) + "× better signal than sea level during storms.";
+                    bottomlineEl.className = 'layman-desc amazing';
+                } else {
+                    signalEl.textContent = "Extreme altitude — virtually no atmospheric interference!";
+                    signalEl.className = 'layman-desc amazing';
+                    streamingEl.textContent = "Near-perfect conditions for satellite signal reception.";
+                    streamingEl.className = 'layman-desc amazing';
+                    weatherEl.textContent = "Weather? What weather? It's all happening far below you.";
+                    weatherEl.className = 'layman-desc amazing';
+                    bottomlineEl.textContent = "Maximum advantage! You have some of the best Starlink conditions on Earth.";
+                    bottomlineEl.className = 'layman-desc amazing';
+                }
+            }
+            
+            function updateBar(condition, data) {
+                const minDb = 175;
+                const maxDb = 195;
+                const range = maxDb - minDb;
+                
+                const seaWidth = ((data.seaLevel - minDb) / range) * 100;
+                const altWidth = ((data.altitude - minDb) / range) * 100;
+                
+                document.getElementById('bar-' + condition + '-sea').style.width = Math.min(seaWidth, 100) + '%';
+                document.getElementById('bar-' + condition + '-sea').textContent = data.seaLevel.toFixed(1) + ' dB';
+                
+                document.getElementById('bar-' + condition + '-alt').style.width = Math.min(altWidth, 100) + '%';
+                document.getElementById('bar-' + condition + '-alt').textContent = data.altitude.toFixed(1) + ' dB';
+                
+                const badge = document.getElementById('badge-' + condition);
+                badge.textContent = '+' + data.advantage.toFixed(1) + ' dB';
+                badge.className = 'advantage-badge ' + (data.advantage > 0.5 ? 'positive' : 'neutral');
+            }
+            
+            function updateScenario(id, advantage, level) {
+                const el = document.getElementById('scenario-' + id);
+                el.textContent = '+' + advantage.toFixed(1) + ' dB';
+                el.className = 'scenario-advantage ' + level;
+            }
+            
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status-message ' + type;
+            }
+            
+            // Initialize with default values
+            updateCalculations(0);
+        });
+    </script>
+</body>
+</html>
